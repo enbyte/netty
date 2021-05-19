@@ -109,11 +109,12 @@ class Server:
         
     def _handle_single(self, client):
         while True:
-            numchars = c.recv(__HEADER_AMOUNT__)
+            numchars = client.recv(__HEADER_AMOUNT__)
             if numchars == b'':
                 continue
+                print("numchars empty bytestring")
             numchars = int(numchars)
-            data = client.recv(chars)
+            data = client.recv(numchars)
             if not data == b'':
                 data = pickle.loads(data)
                 self.onReceive(data, self._clients)
@@ -150,10 +151,12 @@ class Server:
             self._accept_once()
     def _accept_newthread_forever(self):
         while True:
+            print("newthread -- before accept")
             client, address = self.listener.accept()
             point = len(self._clientthreads)
-            self._clientthreads.append(threading.Thread(target=_handle_single, args = (client, )))
-            self._clientthread[point].start()
+            print("Got client:", client)
+            self._clientthreads.append(threading.Thread(target=self._handle_single, args = (client, )))
+            self._clientthreads[point].start()
 
     def start(self):
         assert not self.started
@@ -167,6 +170,7 @@ class Server:
             self.acceptThread.start()
         else:
             self.acceptThread = threading.Thread(target=self._accept_newthread_forever)
+            self.acceptThread.start()
         self.handleThread.start()
             
             
