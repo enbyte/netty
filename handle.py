@@ -14,4 +14,7 @@ class Message:
         return self.data
 
     def __repr__(self):
-        print("Message, time: %s, uid: %s, data: %s" % (self.time, self.uid, self.data))
+        return "Message, time: %s, uid: %s, data: %s" % (self.time, self.uid, self.data)
+
+    def __str__(self):
+        return self.data

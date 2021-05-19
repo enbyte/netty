@@ -17,6 +17,9 @@ class ErrorMessageNotFromServer(Exception):
 class ErrorConnectingToServer(Exception):
     pass
 
+__HEADER_SIZE__ = 4
+__HEADER_AMOUNT__ = 4
+
 class Client:
   def __init__(self, ip, port, onReceive=lambda x: None):
     self.ip = ip
@@ -29,6 +32,7 @@ class Client:
     
     self.connection = None
     self.onReceive = onReceive
+    self.timeLast = time.time()
   
   def _dict_wrapper(self, data, type_='data'):
         return {
@@ -40,9 +44,12 @@ class Client:
     
   def _receive_once(self):
     try:
-      received = self.connection.recv(1024)
+      received = self.connection.recv(__HEADER_SIZE__)
+      print("RECV amt:", received)
+      received = int(received)
       try:
-          mes = pickle.loads(received)
+          data = self.connection.recv(received)
+          mes = pickle.loads(data)
           mes = handle.Message(mes)
       except:
           raise ErrorReceivingMessage
@@ -62,6 +69,7 @@ class Client:
     self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
       self.connection.connect((str(self.ip), int(self.port)))
+      self.connection.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
       self.connected = True
     except:
       self.connected = False
@@ -69,12 +77,15 @@ class Client:
       raise ErrorConnectingToServer
 
   def send(self, data):
-    assert self.connected
-    wrapper = self._dict_wrapper(data)
-    try:
-        self.connection.send(pickle.dumps(wrapper))
-    except:
-        raise ErrorSendingMessage
+    if 1:
+        assert self.connected
+        wrapper = self._dict_wrapper(data)
+        dumped_wrapper = pickle.dumps(wrapper)
+        try:            
+            self.connection.sendall(str(len(dumped_wrapper)).encode().rjust(4, b'0'))
+            self.connection.sendall(dumped_wrapper)
+        except:
+            raise ErrorSendingMessage
 
   def start(self):
       assert not self.connected
@@ -86,21 +97,42 @@ class Client:
 
 
 class Server:
-    def __init__(self, port, onReceive=lambda x, y: None):
+    def __init__(self, port, onReceive=lambda x, y: None, _newthread_client=True):
         self.port = port
         self.ip = ''
         self.started = False
         self._clients = []
+        self._clientthreads = []
         self.clients = []
         self.onReceive = onReceive
-
-    def _handle_all(self):
-        for c in self._clients:
-            data = c.recv(1024)
+        self._newthread_client = _newthread_client
+        
+    def _handle_single(self, client):
+        while True:
+            numchars = c.recv(__HEADER_AMOUNT__)
+            if numchars == b'':
+                continue
+            numchars = int(numchars)
+            data = client.recv(chars)
             if not data == b'':
                 data = pickle.loads(data)
                 self.onReceive(data, self._clients)
-                print("Completed non-empty send-check cycle")
+            
+
+    def _handle_all(self):
+        for c in self._clients:
+            try:
+                things = c.recv(__HEADER_AMOUNT__)
+                if things == b'':
+                    continue
+                chars = int(things)
+                data = c.recv(chars)
+                print("Number of characters:", chars)
+                if not data == b'':
+                    data = pickle.loads(data)
+                    self.onReceive(data, self._clients)
+            except:
+                pass
     def _handle_forever(self):
         while True:
             self._handle_all()
@@ -109,12 +141,19 @@ class Server:
         print("before accept")
         client, address = self.listener.accept()
         self._clients.append(client)
+        
         print("Got client: %s" % client)
         print("after accept")
 
     def _accept_forever(self):
         while True:
             self._accept_once()
+    def _accept_newthread_forever(self):
+        while True:
+            client, address = self.listener.accept()
+            point = len(self._clientthreads)
+            self._clientthreads.append(threading.Thread(target=_handle_single, args = (client, )))
+            self._clientthread[point].start()
 
     def start(self):
         assert not self.started
@@ -123,9 +162,12 @@ class Server:
         self.listener.bind((self.ip, self.port))
         self.listener.listen(5)
         self.handleThread = threading.Thread(target=self._handle_forever)
-        self.acceptThread = threading.Thread(target=self._accept_forever)
+        if not self._newthread_client:
+            self.acceptThread = threading.Thread(target=self._accept_forever)
+            self.acceptThread.start()
+        else:
+            self.acceptThread = threading.Thread(target=self._accept_newthread_forever)
         self.handleThread.start()
-        self.acceptThread.start()
             
             
             
