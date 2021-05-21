@@ -45,8 +45,8 @@ class Client:
   def _receive_once(self):
     try:
       received = self.connection.recv(__HEADER_SIZE__)
-      print("RECV amt:", received)
       received = int(received)
+      print("recv amt:", received)
       try:
           data = self.connection.recv(received)
           mes = pickle.loads(data)
@@ -112,7 +112,6 @@ class Server:
             numchars = client.recv(__HEADER_AMOUNT__)
             if numchars == b'':
                 continue
-                print("numchars empty bytestring")
             numchars = int(numchars)
             data = client.recv(numchars)
             if not data == b'':
@@ -121,8 +120,11 @@ class Server:
             
 
     def _handle_all(self):
-        for c in self._clients:
+        clientno = 0
+        clientmax = len(self._clients)
+        for c in range(clientmax):
             try:
+                client = self._clients[c]
                 things = c.recv(__HEADER_AMOUNT__)
                 if things == b'':
                     continue
@@ -153,6 +155,7 @@ class Server:
         while True:
             print("newthread -- before accept")
             client, address = self.listener.accept()
+            self._clients.append(client)
             point = len(self._clientthreads)
             print("Got client:", client)
             self._clientthreads.append(threading.Thread(target=self._handle_single, args = (client, )))
@@ -164,14 +167,15 @@ class Server:
         self.listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.listener.bind((self.ip, self.port))
         self.listener.listen(5)
-        self.handleThread = threading.Thread(target=self._handle_forever)
         if not self._newthread_client:
             self.acceptThread = threading.Thread(target=self._accept_forever)
             self.acceptThread.start()
+            self.handleThread = threading.Thread(target=self._handle_forever)
+            self.handleThread.start()
         else:
             self.acceptThread = threading.Thread(target=self._accept_newthread_forever)
             self.acceptThread.start()
-        self.handleThread.start()
+
             
             
             
