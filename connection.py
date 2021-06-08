@@ -26,7 +26,7 @@ class Client:
     
     self.port = port
     
-    self.uid = crypt.strHash(str(self.ip) + str(self.port))
+    self.uid = crypt.strHash(str(self.ip) + '$@lt' + str(self.port))
     
     self.connected = False
     
@@ -45,14 +45,20 @@ class Client:
   def _receive_once(self):
     try:
       received = self.connection.recv(__HEADER_SIZE__)
-      received = int(received)
-      print("recv amt:", received)
+      if received == b'': return
+      try:
+          received = int(received)
+      except:
+          print("Rec int fail")
+          pass
+      mes = None
       try:
           data = self.connection.recv(received)
           mes = pickle.loads(data)
           mes = handle.Message(mes)
       except:
-          raise ErrorReceivingMessage
+          print("ayyyy segfault")
+          pass
       if mes != None:
         self.onReceive(mes)
     except:
@@ -69,7 +75,6 @@ class Client:
     self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
       self.connection.connect((str(self.ip), int(self.port)))
-      self.connection.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
       self.connected = True
     except:
       self.connected = False
