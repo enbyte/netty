@@ -1,19 +1,15 @@
 from __init__ import *
 
 
-__PORT__ = 3009
+__PORT__ = 3010
 
 
 def echo(mes):
-    print("Client type of mes:", type(mes))
-    print(mes)
+    print("Client got message with time %s, uid %s, and data %s" % (mes.time, mes.uid, mes.data))
 
 def broadcast_all(mes, clients):
-    print("Server type of mes:", type(mes))
-    print("Server got message:", mes['payload'])
     for client in clients:
         client.send(encode(mes))
-        print("Server echoed message %s to client %s" % (mes['payload'], mes['uid']))
 
 client = connection.Client('', __PORT__, onReceive=echo)
 

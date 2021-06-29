@@ -46,7 +46,7 @@ class Client:
     try:
       received = self.connection.recv(__HEADER_SIZE__)
       received = int(received)
-      print("Client got data amount:", received)
+      #print("Client got data amount:", received)
       if received == b'': return
       received = int(received)
       mes = None
@@ -86,7 +86,7 @@ class Client:
         dumped_wrapper = pickle.dumps(wrapper)
         try:
             x = str(len(dumped_wrapper)).encode().rjust(4, b'0')
-            print("Client sent packet with length:", x)
+            #print("Client sent packet with length:", x)
             self.connection.sendall(x + dumped_wrapper)
         except:
             raise ErrorSendingMessage
@@ -116,12 +116,12 @@ class Server:
             numchars = client.recv(__HEADER_AMOUNT__)
             if numchars == b'':
                 continue
-            print("Server numchars recv len:", numchars) 
+            #print("Server numchars recv len:", numchars) 
             numchars = int(numchars)
             data = client.recv(numchars)
             if not data == b'':
                 data = pickle.loads(data)
-                print(data, type(data))
+                #print(data, type(data))
                 self.onReceive(data, self._clients)
             
 
@@ -136,7 +136,7 @@ class Server:
                     continue
                 chars = int(things)
                 data = c.recv(chars)
-                print("Number of characters:", chars)
+                #print("Number of characters:", chars)
                 if not data == b'':
                     data = pickle.loads(data)
                     self.onReceive(data, self._clients)
@@ -147,19 +147,19 @@ class Server:
             self._handle_all()
 
     def _accept_once(self):
-        print("before accept")
+        #print("before accept")
         client, address = self.listener.accept()
         self._clients.append(client)
         
         print("Got client: %s" % client)
-        print("after accept")
+        #print("after accept")
 
     def _accept_forever(self):
         while True:
             self._accept_once()
     def _accept_newthread_forever(self):
         while True:
-            print("newthread -- before accept")
+            #print("newthread -- before accept")
             client, address = self.listener.accept()
             self._clients.append(client)
             point = len(self._clientthreads)
@@ -169,10 +169,10 @@ class Server:
 
     def start(self):
         assert not self.started
-        print("Starting server")
         self.listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.listener.bind((self.ip, self.port))
         self.listener.listen(5)
+        print("Server successfully created on port %s" % self.port)
         if not self._newthread_client:
             self.acceptThread = threading.Thread(target=self._accept_forever)
             self.acceptThread.start()
