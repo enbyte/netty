@@ -26,7 +26,7 @@ class Client:
     
     self.port = port
     
-    self.uid = crypt.strHash(str(self.ip) + str(self.port))
+    self.uid = crypt.strHash(str(self.ip) + '$@lt' + str(self.port))
     
     self.connected = False
     
@@ -46,13 +46,17 @@ class Client:
     try:
       received = self.connection.recv(__HEADER_SIZE__)
       received = int(received)
-      print("Got data amount:", received)
+      print("Client got data amount:", received)
+      if received == b'': return
+      received = int(received)
+      mes = None
       try:
           data = self.connection.recv(received)
           mes = pickle.loads(data)
-          mes = handsle.Message(mes)
-      except:
-          raise ErrorReceivingMessage
+          mes = handle.Message(mes)
+      except Exception as e:
+          print("Error:", e)
+          mes = None
       if mes != None:
         self.onReceive(mes)
     except:
@@ -70,7 +74,6 @@ class Client:
     self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
       self.connection.connect((str(self.ip), int(self.port)))
-      self.connection.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
       self.connected = True
     except:
       self.connected = False
@@ -83,9 +86,8 @@ class Client:
         dumped_wrapper = pickle.dumps(wrapper)
         try:
             x = str(len(dumped_wrapper)).encode().rjust(4, b'0')
-            print("Sent packet with length:", x)
+            print("Client sent packet with length:", x)
             self.connection.sendall(x + dumped_wrapper)
-            self.connection.sendall(dumped_wrapper)
         except:
             raise ErrorSendingMessage
 
@@ -107,17 +109,19 @@ class Server:
         self._clientthreads = []
         self.clients = []
         self.onReceive = onReceive
-        self._newthread_client = _newthread_client
+        self._newthread_client = True
         
     def _handle_single(self, client):
         while True:
             numchars = client.recv(__HEADER_AMOUNT__)
             if numchars == b'':
                 continue
+            print("Server numchars recv len:", numchars) 
             numchars = int(numchars)
             data = client.recv(numchars)
             if not data == b'':
                 data = pickle.loads(data)
+                print(data, type(data))
                 self.onReceive(data, self._clients)
             
 

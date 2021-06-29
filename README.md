@@ -1,2 +1,25 @@
 # netty
-A simple python library for networking
+A simple python library for networking. Not extremely complex, but allows for simple game servers and chat rooms to be hosted.
+
+# Documentation
+
+This example will show you how to make a simple chat room with `netty`.
+
+First, import netty:
+```python
+import netty
+```
+Then, choose a port and make a client and a server:
+```python
+import netty
+
+PORT = 3000
+
+client = netty.connection.Client('', PORT) # args: IP ('' for local), and port.
+
+server = netty.connection.Server(PORT) # args: port to run the server on.
+```
+Now, we have a client and a server, but they aren't doing anything when they get a message. To do this, we need to add a `onReceive` argument to the client and server.
+
+MORE DOCUMENTATION COMING SOON
+==============================
