@@ -46,11 +46,11 @@ class Client:
     try:
       received = self.connection.recv(__HEADER_SIZE__)
       received = int(received)
-      print("recv amt:", received)
+      print("Got data amount:", received)
       try:
           data = self.connection.recv(received)
           mes = pickle.loads(data)
-          mes = handle.Message(mes)
+          mes = handsle.Message(mes)
       except:
           raise ErrorReceivingMessage
       if mes != None:
@@ -61,6 +61,7 @@ class Client:
         raise ErrorDisconnectedFromServer
 
   def _rec_forever(self):
+      assert self.connected
       while True:
           self._receive_once()
           
@@ -77,12 +78,13 @@ class Client:
       raise ErrorConnectingToServer
 
   def send(self, data):
-    if 1:
         assert self.connected
         wrapper = self._dict_wrapper(data)
         dumped_wrapper = pickle.dumps(wrapper)
-        try:            
-            self.connection.sendall(str(len(dumped_wrapper)).encode().rjust(4, b'0'))
+        try:
+            x = str(len(dumped_wrapper)).encode().rjust(4, b'0')
+            print("Sent packet with length:", x)
+            self.connection.sendall(x + dumped_wrapper)
             self.connection.sendall(dumped_wrapper)
         except:
             raise ErrorSendingMessage
@@ -90,8 +92,8 @@ class Client:
   def start(self):
       assert not self.connected
       self.connect()
-      thread = threading.Thread(target=self._rec_forever)
-      thread.start()
+      self.rec_thread = threading.Thread(target=self._rec_forever)
+      self.rec_thread.start()
       
 
 
