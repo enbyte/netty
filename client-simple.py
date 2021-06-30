@@ -1,5 +1,4 @@
 import netty
-import pickle
 import pygame
 from pygame.locals import *
 
