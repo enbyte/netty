@@ -20,6 +20,9 @@ client = netty.connection.Client('', PORT) # args: IP ('' for local), and port.
 server = netty.connection.Server(PORT) # args: port to run the server on.
 ```
 Now, we have a client and a server, but they aren't doing anything when they get a message. To do this, we need to add a `onReceive` argument to the client and server.
+The `onReceive` is called whenever the client or server receives a packet. 
+The client function takes one argument, the message. 
+The message is of type `netty.handle.Message` and has a time, uid, and the data sent.
 
 MORE DOCUMENTATION COMING SOON
 ==============================
