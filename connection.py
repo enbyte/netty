@@ -3,8 +3,6 @@ import socket
 import threading
 import pickle
 import handle
-import json
-import sys
 import time
 
 class ErrorDisconnectedFromServer(Exception):
@@ -132,11 +130,10 @@ class Server:
             
 
     def _handle_all(self):
-        clientno = 0
         clientmax = len(self._clients)
-        for c in range(clientmax):
+        for client in range(clientmax):
             try:
-                client = self._clients[c]
+                c = self._clients[client]
                 things = c.recv(__HEADER_AMOUNT__)
                 if things == b'':
                     continue
