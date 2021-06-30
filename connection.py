@@ -1,5 +1,10 @@
 import crypttools as crypt
-import socket, threading, pickle, handle, json, sys
+import socket
+import threading
+import pickle
+import handle
+import json
+import sys
 import time
 
 class ErrorDisconnectedFromServer(Exception):
@@ -47,7 +52,8 @@ class Client:
       received = self.connection.recv(__HEADER_SIZE__)
       received = int(received)
       #print("Client got data amount:", received)
-      if received == b'': return
+      if received == b'':
+            return
       received = int(received)
       mes = None
       try:
@@ -57,7 +63,7 @@ class Client:
       except Exception as e:
           print("Error:", e)
           mes = None
-      if mes != None:
+      if mes is not None:
         self.onReceive(mes)
     except:
         print("Closing...")
@@ -140,8 +146,8 @@ class Server:
                 if not data == b'':
                     data = pickle.loads(data)
                     self.onReceive(data, self._clients)
-            except:
-                pass
+            except Exception:
+                print("Handle-all got error")
     def _handle_forever(self):
         while True:
             self._handle_all()
