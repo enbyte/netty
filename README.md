@@ -1,4 +1,5 @@
 # netty
+[![CodeFactor](https://www.codefactor.io/repository/github/enbyte/netty/badge/main)](https://www.codefactor.io/repository/github/enbyte/netty/overview/main)
 A simple python library for networking. Not extremely complex, but allows for simple game servers and chat rooms to be hosted.
 
 # Documentation
