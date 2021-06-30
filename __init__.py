@@ -1,4 +1,3 @@
-import connection
 import pickle
 
 def encode(obj):
