@@ -5,7 +5,7 @@ __PORT__ = 3010
 
 
 def echo(mes):
-    print("Client got message with time %s, uid %s, and data %s" % (mes.time, mes.uid, mes.data))
+    print("Client got message with time %s, uid %s, and data %s" % (mes.time, mes.uid, mes.data)) #lgtm [py/clear-text-logging-sensitive-data]
 
 def broadcast_all(mes, clients):
     for client in clients:
