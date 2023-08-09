@@ -4,7 +4,7 @@
 [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/enbyte/netty.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/enbyte/netty/context:python)
 
 
-A simple python library for networking. Not extremely complex, but allows for simple game servers and chat rooms to be hosted.
+A simple python library for networking to run chatrooms and small gameservers. Not extremely complex, but allows for simple game servers and chat rooms to be hosted.
 
 # Documentation
 
