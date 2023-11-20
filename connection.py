@@ -24,34 +24,32 @@ __HEADER_SIZE__ = 4
 __HEADER_AMOUNT__ = 4
 
 class Client:
-  def __init__(self, ip, port, onReceive=lambda x: None):
+  def __init__(self, ip, port, on_receive=lambda x: None, uid=None):
     self.ip = ip
     
     self.port = port
     
-    self.uid = crypt.strHash(str(self.ip) + '$@lt' + str(self.port))
+    self.uid = (crypt.strHash(str(self.ip) + '$@lt' + str(self.port) + str(time.time())) if uid is None else uid)
     
     self.connected = False
     
     self.connection = None
-    self.onReceive = onReceive
+    self.on_receive = on_receive
     self.timeLast = time.time()
   
   def _dict_wrapper(self, data, type_='data'):
         return {
             'uid': self.uid,
             'time': time.time(),
-            'payload': data,
+            'data': data,
             'type': type_
         }
     
   def _receive_once(self):
     try:
       received = self.connection.recv(__HEADER_SIZE__)
-      received = int(received)
-      #print("Client got data amount:", received)
       if received == b'':
-            return
+            return  
       received = int(received)
       mes = None
       try:
@@ -62,10 +60,9 @@ class Client:
           print("Error:", e)
           mes = None
       if mes is not None:
-        self.onReceive(mes)
+        self.on_receive(mes)
     except:
         print("Closing...")
-        self.connection.close()
         raise ErrorDisconnectedFromServer
 
   def _rec_forever(self):
@@ -84,15 +81,15 @@ class Client:
       self.connection = None
       raise ErrorConnectingToServer
 
-  def send(self, data):
+  def send(self, data, type_='data'):
         assert self.connected
-        wrapper = self._dict_wrapper(data)
+        wrapper = self._dict_wrapper(data, type_=type_)
         dumped_wrapper = pickle.dumps(wrapper)
         try:
-            x = str(len(dumped_wrapper)).encode().rjust(4, b'0')
-            #print("Client sent packet with length:", x)
-            self.connection.sendall(x + dumped_wrapper)
-        except:
+            length = str(len(dumped_wrapper)).encode().rjust(4, b'0')
+            self.connection.sendall(length + dumped_wrapper)
+        except Exception as e:
+            print(e)
             raise ErrorSendingMessage
 
   def start(self):
@@ -100,74 +97,90 @@ class Client:
       self.connect()
       self.rec_thread = threading.Thread(target=self._rec_forever)
       self.rec_thread.start()
+
+  def stop(self):
+        assert self.connected
+        self.connection.close()
+        self.connected = False
+        self.connection = None
+        self.rec_thread.join()
       
 
 
 
 class Server:
-    def __init__(self, port, onReceive=lambda x, y: None, _newthread_client=True):
+    def __init__(self, port, on_receive=lambda x, y, z, w: None, _newthread_client=True):
         self.port = port
         self.ip = ''
         self.started = False
         self._clients = []
         self._clientthreads = []
-        self.clients = []
-        self.onReceive = onReceive
+        self.on_receive = on_receive
         self._newthread_client = True
+
+
+    def send_single(self, client_or_client_index, data):
+        client = self.clients[client_or_client_index] if type(client_or_client_index) == int else client_or_client_index
+
+        dump = pickle.dumps(data) # data is the dict already
+        try:
+            length = str(len(dump)).encode().rjust(4, b'0')
+            client.sendall(length + dump)
+        except Exception as e:
+            print(e)
+            raise ErrorSendingMessage
+        
+    def send_all(self, data):
+        for client in self._clients:
+            self.send_single(client, data)
+
+    def send_all_except(self, data, client):
+        for client in self._clients:
+            if not client == client:
+                self.send_single(client, data)
         
     def _handle_single(self, client):
         while True:
-            numchars = client.recv(__HEADER_AMOUNT__)
-            if numchars == b'':
-                continue
-            #print("Server numchars recv len:", numchars) 
-            numchars = int(numchars)
-            data = client.recv(numchars)
-            if not data == b'':
-                data = pickle.loads(data)
-                #print(data, type(data))
-                self.onReceive(data, self._clients)
+            try:
+                numchars = client.recv(__HEADER_AMOUNT__)
+                if numchars == b'':
+                    continue
+                numchars = int(numchars)
+                data = client.recv(numchars)
+                if not data == b'':
+                    data = pickle.loads(data)
+                    self.on_receive(data, self._clients, self, client)
+            except ConnectionResetError:
+                print('Client disconnected:', client)
+
+    def remove_client(self, client):
+        self._clients.remove(client)
             
 
     def _handle_all(self):
-        clientmax = len(self._clients)
-        for client in range(clientmax):
-            try:
-                c = self._clients[client]
-                things = c.recv(__HEADER_AMOUNT__)
-                if things == b'':
-                    continue
-                chars = int(things)
-                data = c.recv(chars)
-                #print("Number of characters:", chars)
-                if not data == b'':
-                    data = pickle.loads(data)
-                    self.onReceive(data, self._clients)
-            except Exception:
-                print("Handle-all got error")
+        for client in self._clients:
+            self._handle_single(client)
+
     def _handle_forever(self):
         while True:
             self._handle_all()
 
     def _accept_once(self):
-        #print("before accept")
         client, address = self.listener.accept()
         self._clients.append(client)
         
         print("Got client: %s" % client)
-        #print("after accept")
 
     def _accept_forever(self):
         while True:
             self._accept_once()
+
     def _accept_newthread_forever(self):
         while True:
-            #print("newthread -- before accept")
             client, address = self.listener.accept()
             self._clients.append(client)
             point = len(self._clientthreads)
-            print("Got client:", client)
-            self._clientthreads.append(threading.Thread(target=self._handle_single, args = (client, )))
+            self._clientthreads.append(threading.Thread(target=self._handle_single, args=(client,)))
             self._clientthreads[point].start()
 
     def start(self):
