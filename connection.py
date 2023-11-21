@@ -1,8 +1,7 @@
-import crypttools as crypt
+import utils
 import socket
 import threading
 import pickle
-import handle
 import time
 
 class ErrorDisconnectedFromServer(Exception):
@@ -29,7 +28,11 @@ class Client:
     
     self.port = port
     
-    self.uid = (crypt.strHash(str(self.ip) + '$@lt' + str(self.port) + str(time.time())) if uid is None else uid)
+    self.uid = (
+        (utils.generate_random_uid(
+            str(self.ip) + '$@lt' + str(self.port) + str(time.time())
+        ) 
+        if uid is None else uid))
     
     self.connected = False
     
@@ -55,7 +58,7 @@ class Client:
       try:
           data = self.connection.recv(received)
           mes = pickle.loads(data)
-          mes = handle.Message(mes)
+          mes = utils.Message(mes)
       except Exception as e:
           print("Error:", e)
           mes = None

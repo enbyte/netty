@@ -98,7 +98,8 @@ class NetworkedPlayerManager:
 manager = NetworkedPlayerManager(IP, PORT)
 
 SCREEN_W, SCREEN_H = (400, 400)
-screen = pygame.display.set_mode((SCREEN_W, SCREEN_H))
+FLAGS = SRCALPHA | DOUBLEBUF | HWSURFACE
+screen = pygame.display.set_mode((SCREEN_W, SCREEN_H), flags=FLAGS)
 
 
 clock = pygame.time.Clock()
@@ -137,4 +138,4 @@ while running:
     except KeyboardInterrupt:
         manager.leave()
         running = False
-        print('Exiting...')
+        print('Exiting (by local KeyboardInterrupt)...')
